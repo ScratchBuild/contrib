@@ -19,7 +19,7 @@ Symlink "openwrt-wifi-devices_" to "openwrt-wifi-devices_192.168.1.1"
 
 When using OpenWrt 25:
 Instead of using the root router password, you can configure
-a user with limited rights in LuCI:
+a user with limited rights in LuCI (needs package "luci-app-acl"):
 Create a new "LuCI Login" in the "ACL Settings" with the following permissions
 set to "readonly":
 - luci-base
@@ -37,7 +37,7 @@ set to "readonly":
 
 =head2 CONFIGURATION EXAMPLE
 
-  [dd-wrt-*]
+  [openwrt-*]
   env.user tpli
   env.password thisismypassword
 
@@ -213,12 +213,13 @@ connectionsCount=$(
 if [ "$connectionsCount" -eq 0 ]; then
     errors=$(
         echo "$connectionsResponse"\
-            | jq -r '.[].error'
+            | jq -r 'map(select(has("error"))) | .[].error'
     )
-    echo "Error fetching wireless devices"
-    echo "Permission required: luci-mod-status-index-wifi"
-    echo "$errors"
-    exit 2
+    if [ -n "$errors" ]; then
+        echo "Error fetching wireless devices"
+        echo "Permission required: luci-mod-status-index-wifi"
+        exit 2
+    fi
 fi
 
 echo "wifi.value $connectionsCount"
